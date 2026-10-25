@@ -1,9 +1,11 @@
 #!/bin/sh
 # Renders scripts/narration.ts to demo-video/voice/<scene>.wav with macOS `say`.
-# VOICE="Ava (Premium)" sh scripts/make-voice.sh   (default: Samantha)
+# VOICE="Samantha" sh scripts/make-voice.sh   (default: Ava (Premium) if installed, else Samantha)
 set -e
-VOICE="${VOICE:-Samantha}"
-RATE="${RATE:-172}"
+if [ -z "$VOICE" ]; then
+  if say -v '?' | grep -q "^Ava (Premium)"; then VOICE="Ava (Premium)"; else VOICE="Samantha"; fi
+fi
+RATE="${RATE:-178}"
 mkdir -p demo-video/voice
 npx tsx -e 'import("./scripts/narration.ts").then(m => { for (const [k, v] of Object.entries(m.NARRATION)) console.log(k + "\t" + v) })' |
 while IFS="$(printf '\t')" read -r scene line; do

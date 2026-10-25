@@ -79,6 +79,7 @@ What it showed for the Maya fixture (honest reading):
 |---|---|
 | `ANTHROPIC_API_KEY` | Claude as the agent (otherwise the rules agent runs) |
 | `CRS_USERNAME`, `CRS_PASSWORD` | "Load from CRS sandbox" |
+| `CRS_PERSONAS_JSON` | The CRS test identities, `{"P05": {firstName, lastName, ssn, addresses}, …}`, from CRS's hackathon package; kept out of the repo |
 | `NESSIE_API_KEY` (optional `NESSIE_BASE_URL`) | Nessie cash import |
 
 ```bash

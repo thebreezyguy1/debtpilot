@@ -42,6 +42,10 @@ export const importPersona = action({
     const password = process.env.CRS_PASSWORD;
     if (!username || !password) throw new Error("CRS_USERNAME and CRS_PASSWORD are not set on the Convex deployment.");
 
+    const identities = JSON.parse(process.env.CRS_PERSONAS_JSON ?? "{}") as Record<string, Record<string, unknown>>;
+    const identity = identities[persona.id];
+    if (!identity) throw new Error(`Test identity ${persona.id} is missing: set CRS_PERSONAS_JSON on the Convex deployment.`);
+
     const locked = await ctx.runQuery(internal.crs.lockState, {});
     if (locked?.lockedReason) throw new Error(`CRS is locked: ${locked.lockedReason}`);
 
@@ -65,7 +69,7 @@ export const importPersona = action({
         "Content-Type": "application/json",
         Accept: "application/json",
       },
-      body: JSON.stringify(persona.body),
+      body: JSON.stringify(identity),
     });
     if (!res.ok) throw new Error(`CRS credit report failed (HTTP ${res.status})`);
     const report = (await res.json()) as CrsReport;

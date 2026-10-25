@@ -1,0 +1,14 @@
+# dependencies and build output
+node_modules
+.next
+.next-build
+tsconfig.tsbuildinfo
+
+# local Convex backend data and env (keys live on the Convex deployment, never in git)
+.convex
+.env.local
+.env*.local
+
+# local tooling
+.claude
+.DS_Store

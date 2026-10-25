@@ -12,3 +12,6 @@ tsconfig.tsbuildinfo
 # local tooling
 .claude
 .DS_Store
+
+# recorded demo video
+demo-video

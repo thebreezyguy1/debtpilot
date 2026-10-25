@@ -5,7 +5,7 @@
 //
 //   npx tsx scripts/record-demo.ts   → demo-video/raw.webm + demo-video/segments.json
 import { chromium, type Locator, type Page } from "playwright";
-import { mkdirSync, renameSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 
 const URL = process.env.DEMO_URL ?? "http://localhost:3100";
 const OUT = "demo-video";
@@ -13,6 +13,23 @@ const SIZE = { width: 1600, height: 900 };
 
 let t0 = 0;
 const waits: { start: number; end: number }[] = [];
+// Voiceover: when each scene's line starts (raw video time), for scripts/edit-demo.ts.
+const cues: { scene: string; at: number }[] = [];
+const voice: Record<string, number> = existsSync(`${OUT}/voice/durations.tsv`)
+  ? Object.fromEntries(
+      readFileSync(`${OUT}/voice/durations.tsv`, "utf8")
+        .trim()
+        .split("\n")
+        .map((l) => l.split("\t"))
+        .map(([k, v]) => [k!, Number(v)]),
+    )
+  : {};
+/** How long to hold a scene: its default, or long enough for its narration line. */
+function hold(ms: number, scene?: string) {
+  if (!scene || !(scene in voice)) return ms;
+  cues.push({ scene, at: now() });
+  return Math.max(ms, voice[scene]! * 1000 + 500);
+}
 const now = () => (Date.now() - t0) / 1000;
 const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -35,7 +52,7 @@ async function setup(page: Page) {
   });
 }
 
-async function caption(page: Page, text: string, sub = "", ms = 4000) {
+async function caption(page: Page, text: string, sub = "", ms = 4000, scene?: string) {
   await page.evaluate(
     ([t, s]) => {
       const el = document.getElementById("demo-cap")!;
@@ -50,14 +67,14 @@ async function caption(page: Page, text: string, sub = "", ms = 4000) {
     },
     [text, sub],
   );
-  await pause(ms);
+  await pause(hold(ms, scene));
 }
 
 async function hideCaption(page: Page) {
   await page.evaluate(() => (document.getElementById("demo-cap")!.style.opacity = "0"));
 }
 
-async function card(page: Page, title: string, lines: string[], ms: number) {
+async function card(page: Page, title: string, lines: string[], ms: number, scene?: string) {
   await page.evaluate(
     ([t, l]) => {
       document.getElementById("demo-card")?.remove();
@@ -75,7 +92,7 @@ async function card(page: Page, title: string, lines: string[], ms: number) {
     },
     [title, lines] as const,
   );
-  await pause(ms);
+  await pause(hold(ms, scene));
   await page.evaluate(() => {
     const c = document.getElementById("demo-card");
     if (c) {
@@ -151,25 +168,25 @@ async function main() {
   await setup(page);
   const trimStart = now(); // everything before this is the page loading
 
-  await card(page, "DebtPilot", ["How much can I safely pay toward my debt this week?", "A live demo · built solo at Cal Hacks 13.0"], 3500);
+  await card(page, "DebtPilot", ["How much can I safely pay toward my debt this week?", "A live demo · built solo at Cal Hacks 13.0"], 3500, "title");
 
   // The plan before anything happens.
   const safe = await text(page, 'section.tile:has(.label:text-is("Safe extra payment today")) .big');
   const risk = await text(page, 'section.tile:has(.label:text-is("Chance of missing a payment")) .big');
   await ring(page, page.locator("header .brand"));
-  await caption(page, "Maya is a freelance designer and delivery driver.", "Her income swings from $0 to $1,180 a week.", 4000);
+  await caption(page, "Maya is a freelance designer and delivery driver.", "Her income swings from $0 to $1,180 a week.", 4000, "maya");
   await ring(page, page.locator('section.tile:has(.label:text-is("Safe extra payment today"))'));
-  await caption(page, `DebtPilot says ${safe} is safe to pay today.`, `${risk} chance of missing rent or a minimum, across 2,000 simulated futures.`, 5000);
+  await caption(page, `DebtPilot says ${safe} is safe to pay today.`, `${risk} chance of missing rent or a minimum, across 2,000 simulated futures.`, 5000, "safe");
 
   const why = await page.locator('section.panel:has(h2:has-text("Why not pay"))').first();
   const alt = (await why.locator(".cmp").nth(1).innerText()).match(/Miss risk\s+([\d.]+%)/)?.[1] ?? "";
   await ring(page, page.locator('section.panel:has(h2:has-text("Why not pay"))'));
-  await caption(page, "Why not pay everything?", `Her chance of missing a payment would jump to ${alt}, and late fees would make it cost more.`, 5000);
+  await caption(page, "Why not pay everything?", `Her chance of missing a payment would jump to ${alt}, and late fees would make it cost more.`, 5000, "why");
 
   // The moment.
   await scrollTop(page);
   await ring(page, page.locator("form.happened"));
-  await caption(page, "Then life happens. She tells DebtPilot in plain words.", "", 2500);
+  await caption(page, "Then life happens. She tells DebtPilot in plain words.", "", 2500, "life");
   const input = page.locator("#happened-input");
   await input.click();
   await input.pressSequentially("I lost my delivery gig for 3 weeks", { delay: 45 });
@@ -182,29 +199,29 @@ async function main() {
   const newSafe = await text(page, 'section.tile:has(.label:text-is("Safe extra payment today")) .big');
   const oldRisk = (await page.locator('section.panel:has(h2:has-text("Why not pay")) .cmp').nth(1).innerText()).match(/Miss risk\s+([\d.]+%)/)?.[1] ?? "";
   await ring(page, page.locator('section.tile:has(.label:text-is("Safe extra payment today"))'));
-  await caption(page, `New safe payment: ${newSafe}.`, `Keeping ${safe} would mean a ${oldRisk} chance of missing a payment.`, 5000);
+  await caption(page, `New safe payment: ${newSafe}.`, `Keeping ${safe} would mean a ${oldRisk} chance of missing a payment.`, 5000, "replanned");
   await ring(page, page.locator("section.panel.approve"));
-  await caption(page, "It doesn't just change the plan. It asks first.", "Claude wrote this approval request; nothing moves without a yes.", 5000);
+  await caption(page, "It doesn't just change the plan. It asks first.", "Claude wrote this approval request; nothing moves without a yes.", 5000, "asks");
   await timed(() => page.getByRole("button", { name: /^Approve/ }).click({ timeout: 20_000 }));
   await pause(1200);
   await ring(page, page.locator(panel("Agent audit log")));
-  await caption(page, "Approved. Every step is on the record.", "", 4000);
+  await caption(page, "Approved. Every step is on the record.", "", 4000, "approved");
 
   // Start the six-month test, then break something while it runs.
   await ring(page, page.locator(panel("DebtPilot vs. the usual advice")));
   await timed(() => page.getByRole("button", { name: /Run 26-week comparison|Re-run comparison/ }).click());
-  await caption(page, "Starting a six-month test in the background…", "", 2500);
+  await caption(page, "Starting a six-month test in the background…", "", 2500, "sixMonth");
 
   await scrollTop(page);
   await ring(page, null);
   await timed(() => page.getByRole("button", { name: "Simulate credit outage" }).click());
-  await caption(page, "Now the credit bureau feed goes down (simulated).", "The agent retries once, then carries on with the last good data · sped up", 1500);
+  await caption(page, "Now the credit bureau feed goes down (simulated).", "The agent retries once, then carries on with the last good data · sped up", 1500, "outage");
   await waitForAgent(page);
   await hideCaption(page);
   await ring(page, page.locator(".safe-mode"));
-  await caption(page, "Safe mode: on stale data, payments can go down but never up.", "Enforced in code, not just in the prompt.", 5000);
+  await caption(page, "Safe mode: on stale data, payments can go down but never up.", "Enforced in code, not just in the prompt.", 5000, "safeMode");
   await timed(() => page.getByRole("button", { name: "Restore credit feed" }).click());
-  await caption(page, "Feed restored: it re-syncs, then re-plans on fresh data · sped up", "", 1500);
+  await caption(page, "Feed restored: it re-syncs, then re-plans on fresh data · sped up", "", 1500, "restored");
   await waitForAgent(page);
   await hideCaption(page);
 
@@ -222,11 +239,12 @@ async function main() {
     `Six months, 200 simulated futures: DebtPilot had the lowest expected cost (${dp[3] ?? ""}).`,
     `The best fixed rule, “keep $1,000”, had a ${k1000[1] ?? ""} chance of a missed payment vs. DebtPilot's ${dp[1] ?? ""}.`,
     7000,
+    "proof",
   );
   await hideCaption(page);
   await ring(page, null);
 
-  await card(page, "Claude decides. Code does the math.", ["Nothing moves without your OK.", "DebtPilot · built solo at Cal Hacks 13.0 by Dorian Taponzing Donfack"], 5000);
+  await card(page, "Claude decides. Code does the math.", ["Nothing moves without your OK.", "DebtPilot · built solo at Cal Hacks 13.0 by Dorian Taponzing Donfack"], 5000, "end");
 
   const end = now();
   const video = page.video();
@@ -234,7 +252,7 @@ async function main() {
   await browser.close();
   const path = await video?.path();
   if (path) renameSync(path, `${OUT}/raw.webm`);
-  writeFileSync(`${OUT}/segments.json`, JSON.stringify({ trimStart, waits, recorded: end }, null, 2));
+  writeFileSync(`${OUT}/segments.json`, JSON.stringify({ trimStart, waits, cues, recorded: end }, null, 2));
   console.log(`Saved ${OUT}/raw.webm (${end.toFixed(0)} s); ${waits.length} spans to speed up`);
 }
 

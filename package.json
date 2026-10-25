@@ -10,7 +10,7 @@
     "demo": "tsx scripts/demo.ts",
     "test": "node --import tsx --test tests/*.test.ts",
     "typecheck": "tsc --noEmit",
-    "record:demo": "tsx scripts/record-demo.ts && tsx scripts/edit-demo.ts"
+    "record:demo": "sh scripts/make-voice.sh && tsx scripts/record-demo.ts && tsx scripts/edit-demo.ts"
   },
   "devDependencies": {
     "@types/node": "^20.17.6",

@@ -71,7 +71,7 @@ What it showed for the Maya fixture (honest reading):
 
 **CRS (credit):** `convex/crs.ts` logs in once, pulls an Experian report (`exp-prequal-vantage4`) for a provided test identity (`lib/crs/personas.ts`: P01 prime, P05 subprime, P18 rebuilding) and maps tradelines through `lib/crs/normalize.ts`. CRS supplies balance, credit limit, monthly payment, past-due amount and score. It has **no APR or due date**, so those use typical values labeled `manual` in the UI. A failed login locks further attempts (repeated failures disable the sandbox account); after fixing credentials run `npx convex run crs:unlock`.
 
-**Nessie (cash):** `convex/nessie.ts` can create a sandbox customer and account, post the persona's weekly income as deposits, then read balance and deposits back into weekly income (`lib/nessie/normalize.ts`). The endpoint shapes follow the public Nessie API and are **not yet verified with a real key**; if they fail, the fixture cash data stays in place.
+**Nessie (cash):** `convex/nessie.ts` creates a sandbox customer and account, posts the persona's weekly income as deposits, then reads balance and deposits back into weekly income (`lib/nessie/normalize.ts`). Verified end to end against the live sandbox: the 10 weeks read back match the fixture exactly. Use **HTTPS** (`https://api.nessieisreal.com`; plain HTTP is refused, and `/atms` returns 502 even when the rest of the API is up). If Nessie fails, the fixture cash data stays in place.
 
 ## Environment variables (set on Convex, never in `.env.local`)
 

@@ -24,3 +24,11 @@ test("seed dates produce one deposit in each of the last N weeks", () => {
   const weekly = weeklyIncomeFromDeposits(dates.map((d) => ({ amount: 100, transaction_date: d })), 10, asOf);
   assert.deepEqual(weekly, new Array(10).fill(100));
 });
+
+test("a deposit dated today counts even before noon UTC", () => {
+  const earlyMorning = new Date("2026-10-25T04:55:00Z");
+  const dates = seedDepositDates(3, earlyMorning);
+  assert.equal(dates[2], "2026-10-25");
+  const weekly = weeklyIncomeFromDeposits(dates.map((d, i) => ({ amount: [100, 200, 300][i], transaction_date: d })), 3, earlyMorning);
+  assert.deepEqual(weekly, [100, 200, 300]);
+});

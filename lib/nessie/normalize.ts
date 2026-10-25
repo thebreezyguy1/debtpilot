@@ -24,7 +24,9 @@ export function weeklyIncomeFromDeposits(deposits: NessieDeposit[], weeks: numbe
   for (const d of deposits) {
     if (d.status && d.status.toLowerCase() === "cancelled") continue;
     const amount = Number(d.amount);
-    const when = d.transaction_date ? Date.parse(`${d.transaction_date}T12:00:00Z`) : NaN;
+    // Nessie dates have no time of day: count each as the start of its (UTC) day, so a
+    // deposit dated today is never treated as in the future.
+    const when = d.transaction_date ? Date.parse(`${d.transaction_date}T00:00:00Z`) : NaN;
     if (!Number.isFinite(amount) || amount <= 0 || !Number.isFinite(when) || when > end) continue;
     const weeksAgo = Math.floor((end - when) / (7 * DAY));
     if (weeksAgo < weeks) buckets[weeks - 1 - weeksAgo]! += amount;

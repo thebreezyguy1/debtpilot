@@ -71,7 +71,7 @@ export const importPersona = action({
     const report = (await res.json()) as CrsReport;
     const requestId = res.headers.get("RequestID") ?? "n/a";
 
-    const { debts, skipped, score } = normalizeCrsReport(report);
+    const { debts, collections, skipped, score } = normalizeCrsReport(report);
     if (debts.length === 0) {
       const errors = report.errorMessages?.length ? ` CRS returned ${report.errorMessages.length} error message(s).` : "";
       throw new Error(`No open card or loan balances in ${persona.name}'s report.${errors}`);
@@ -79,7 +79,7 @@ export const importPersona = action({
 
     // Credit comes from CRS; cash flow stays on the fixture until Nessie is connected.
     await ctx.runMutation(internal.demo.loadProfile, {
-      input: { ...mayaInput, debts, shock: undefined },
+      input: { ...mayaInput, debts, collections, shock: undefined },
       profileName: `${persona.name} · CRS test persona ${persona.id} (${persona.profile})`,
       sources: { credit: `CRS sandbox · Experian · ${persona.id}`, cash: "fixture (Nessie shape)" },
       ...(score !== null ? { creditScore: score } : {}),
@@ -88,6 +88,12 @@ export const importPersona = action({
           title: "Credit report pulled from CRS sandbox",
           detail: `Experian ${persona.config} · request ${requestId} · ${debts.length} open debts${score !== null ? ` · score ${score}` : ""}`,
         },
+        ...(collections.length
+          ? [{
+              title: "Collections kept out of the plan",
+              detail: collections.map((c) => `${c.label} $${Math.round(c.balance).toLocaleString("en-US")}`).join(", ") + " · flagged for a counselor to negotiate",
+            }]
+          : []),
         ...(skipped.length
           ? [{ title: "Tradelines skipped", detail: skipped.map((s) => `${s.creditor} (${s.reason})`).join(", ") }]
           : []),

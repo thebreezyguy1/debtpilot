@@ -106,3 +106,10 @@ test("safe mode caps the recommendation but not comparisons", () => {
   assert.ok(capped.recommended.extraPayment <= 300);
   assert.equal(comparePlans({ ...fast, maxExtraPayment: 300 }, 0, 1000).b.extraPayment, 1000);
 });
+
+test("a past-due amount is owed at the next due date, then cleared", () => {
+  const input = { ...tiny, cashBalance: 100, debts: [{ ...tiny.debts[0]!, pastDue: 60 }], expenses: [] };
+  // $50 minimum + $60 past due = $110 due in week 1; $100 cash + $0 income is short.
+  assert.equal(simulatePath(input, {}, [0]).missed, true);
+  assert.equal(simulatePath(input, {}, [10]).missed, false);
+});

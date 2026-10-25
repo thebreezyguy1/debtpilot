@@ -14,6 +14,13 @@ const time = (ms: number) => new Date(ms).toLocaleTimeString("en-US", { hour: "2
 
 const dotColor = { data: "#4fb3bf", event: "#f2a541", planner: "#7fd0d9", agent: "#e6edf3", tool: "#8b949e", human: "#7fd0d9" } as const;
 
+/** "Late90Days" → "late 90 days", "AsAgreed" → "current". */
+function statusText(status?: string): string | null {
+  if (!status || status === "unknown") return null;
+  if (status === "AsAgreed") return "current";
+  return status.replace(/([a-z])([A-Z0-9])/g, "$1 $2").replace(/(\d)([A-Z])/g, "$1 $2").toLowerCase();
+}
+
 /** Convex wraps server errors; show just the message. */
 function errorText(err: unknown): string {
   if (!(err instanceof Error)) return "Something went wrong";
@@ -407,7 +414,12 @@ export default function Dashboard() {
                 <tbody>
                   {input.debts.map((d) => (
                     <tr key={d.id}>
-                      <td className="name">{d.label} · {d.kind}</td>
+                      <td className="name">
+                        {d.label} · {d.kind}
+                        {statusText(d.status) && (
+                          <span style={{ color: d.status === "AsAgreed" ? "#8b949e" : "#f2a541", fontWeight: 500 }}> · {statusText(d.status)}</span>
+                        )}
+                      </td>
                       <td>{usd(d.balance)}{d.creditLimit ? ` / ${usd(d.creditLimit)}` : ""}</td>
                       <td>{Number((d.apr * 100).toFixed(2))}%</td>
                       <td>{usd(d.minimumPayment)}{d.pastDue ? <span style={{ color: "#f2a541" }}> · {usd(d.pastDue)} past due</span> : null}</td>
@@ -418,6 +430,12 @@ export default function Dashboard() {
                 </tbody>
               </table>
             </div>
+            {(input.collections?.length ?? 0) > 0 && (
+              <p className="note" style={{ margin: 0 }}>
+                <strong style={{ color: "#f2c27a" }}>In collections, not in the plan:</strong>{" "}
+                {input.collections!.map((c) => `${c.label} ${usd(c.balance)}`).join(", ")}. A credit counselor should negotiate these; DebtPilot won't send extra payments to them.
+              </p>
+            )}
           </section>
         </div>
 

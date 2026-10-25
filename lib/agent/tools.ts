@@ -137,8 +137,10 @@ export function summarizeState(input: PlannerInput, previous: PreviousPlan, feed
       due_weeks: d.dueWeeks,
       credit_limit: d.creditLimit ?? null,
       past_due: d.pastDue ?? 0,
+      payment_status: d.status ?? "unknown",
       field_sources: d.sources,
     })),
+    collections_not_in_plan: (input.collections ?? []).map((c) => ({ label: c.label, balance: money(c.balance) })),
     weekly_income_history: input.historicalWeeklyIncome,
     income_sources: input.incomeSources ?? [],
     upcoming_income_changes: (input.incomeChanges ?? []).map((c) => ({

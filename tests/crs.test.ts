@@ -38,3 +38,32 @@ test("CRS fields are labeled CRS; APR and due dates are labeled manual", () => {
 test("an empty or error report yields no debts", () => {
   assert.deepEqual(normalizeCrsReport({ errorMessages: [{}] }).debts, []);
 });
+
+test("same-name accounts get distinct labels; a repeated account id is dropped", () => {
+  const card = { creditorName: "NORTHSTAR BANK VISA", accountType: "Revolving", currentBalanceAmount: "400", creditLimitAmount: "5000" };
+  const { debts, skipped } = normalizeCrsReport({
+    tradelines: [
+      { ...card, accountIdentifier: "REV-1", accountOpenedDate: "2010-10-19" },
+      { ...card, accountIdentifier: "REV-6", accountOpenedDate: "2017-04-20" },
+      { ...card, accountIdentifier: "REV-6", accountOpenedDate: "2017-04-20" },
+    ],
+  });
+  assert.deepEqual(debts.map((d) => d.label), ["NORTHSTAR BANK VISA (opened 2010)", "NORTHSTAR BANK VISA (opened 2017)"]);
+  assert.equal(new Set(debts.map((d) => d.id)).size, 2);
+  assert.deepEqual(skipped, [{ creditor: "NORTHSTAR BANK VISA", reason: "duplicate entry" }]);
+});
+
+test("collections leave the plan; card status and past due are kept", () => {
+  const { debts, collections } = normalizeCrsReport({
+    tradelines: [
+      { creditorName: "NATIONAL RECOVERY 1", accountIdentifier: "COLL-1", accountType: "Open", loanType: "Collection", businessType: "CollectionServices", currentRatingType: "Collection", currentBalanceAmount: "800", highBalanceAmount: "800", pastDueAmount: "800" },
+      { creditorName: "FIRST CHOICE CARD 1", accountIdentifier: "L90-1", accountType: "Revolving", loanType: "CreditCard", currentRatingType: "Late90Days", currentBalanceAmount: "2850", creditLimitAmount: "3000", highBalanceAmount: "3000", pastDueAmount: "450" },
+      { creditorName: "NO LIMIT CARD", accountIdentifier: "R-9", accountType: "Revolving", currentBalanceAmount: "500", highBalanceAmount: "900" },
+    ],
+  });
+  assert.deepEqual(collections, [{ label: "NATIONAL RECOVERY 1", balance: 800, source: "CRS" }]);
+  assert.deepEqual(debts.map((d) => d.label), ["FIRST CHOICE CARD 1", "NO LIMIT CARD"]);
+  assert.equal(debts[0]!.status, "Late90Days");
+  assert.equal(debts[0]!.pastDue, 450);
+  assert.equal(debts[1]!.creditLimit, undefined, "a high balance is not a credit limit");
+});

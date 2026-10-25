@@ -4,6 +4,8 @@ export type DebtState = {
   debt: Debt;
   balance: number;
   penalty: boolean;
+  /** Past-due amount still owed; added to the next minimum until paid. */
+  pastDue: number;
 };
 
 export type PathState = {
@@ -89,7 +91,7 @@ export function availableCashToday(input: PlannerInput): number {
 export function newPathState(input: PlannerInput): PathState {
   return {
     cash: input.cashBalance,
-    debts: input.debts.map((debt) => ({ debt, balance: debt.balance, penalty: false })),
+    debts: input.debts.map((debt) => ({ debt, balance: debt.balance, penalty: false, pastDue: debt.pastDue ?? 0 })),
     missed: false,
     misses: 0,
     interest: 0,
@@ -126,10 +128,11 @@ export function stepWeek(state: PathState, input: PlannerInput, week: number, in
 
   for (const d of state.debts) {
     if (!isDue(d.debt.dueWeeks, week) || d.balance <= 0) continue;
-    const due = Math.min(d.debt.minimumPayment, d.balance);
+    const due = Math.min(d.debt.minimumPayment + d.pastDue, d.balance);
     if (state.cash >= due) {
       state.cash -= due;
       d.balance -= due;
+      d.pastDue = 0;
     } else {
       state.missed = true;
       state.misses++;

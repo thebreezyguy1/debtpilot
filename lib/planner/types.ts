@@ -14,8 +14,10 @@ export type Debt = {
   dueWeeks: number[];
   /** Revolving only: lets the simulator re-borrow on a card that was paid down. */
   creditLimit?: number;
-  /** Amount already past due, as reported by the bureau. */
+  /** Amount already past due, as reported by the bureau. Owed at the next due date, on top of the minimum. */
   pastDue?: number;
+  /** Bureau payment status, e.g. "AsAgreed", "Late30Days", "Late90Days". */
+  status?: string;
   sources: Partial<Record<"balance" | "apr" | "minimumPayment" | "dueWeeks" | "creditLimit", DataSource>>;
 };
 
@@ -60,6 +62,8 @@ export type PlannerInput = {
   expenses: Expense[];
   shock?: Shock;
   incomeChanges?: IncomeChange[];
+  /** Debts already in collections. Not part of the payment plan: a counselor negotiates these. */
+  collections?: { label: string; balance: number; source: DataSource }[];
   /** Where income comes from, as shares of the total (lets "lost one gig" mean a partial drop). */
   incomeSources?: { label: string; share: number }[];
   horizonWeeks: number;

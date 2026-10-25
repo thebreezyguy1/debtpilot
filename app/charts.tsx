@@ -32,25 +32,25 @@ export function CashChart({ bands, dueWeeks }: { bands: CashBand[]; dueWeeks: nu
     >
       {ticks.map((t) => (
         <g key={t}>
-          <line x1={L} x2={R} y1={y(t)} y2={y(t)} stroke="#2a313c" />
-          <text x={L - 8} y={y(t) + 4} fontSize="11" fill="#8b949e" textAnchor="end" fontFamily="var(--mono)">
+          <line x1={L} x2={R} y1={y(t)} y2={y(t)} stroke="var(--line)" />
+          <text x={L - 8} y={y(t) + 4} fontSize="11" fill="var(--muted)" textAnchor="end" fontFamily="var(--mono)">
             {usdShort(t)}
           </text>
         </g>
       ))}
       {dueWeeks.map((w) => (
         <g key={w}>
-          <line x1={x(w)} x2={x(w)} y1={TOP - 6} y2={BOTTOM} stroke="#8b949e" strokeDasharray="2 4" />
-          <text x={x(w)} y={10} fontSize="11" fill="#8b949e" textAnchor="middle">
+          <line x1={x(w)} x2={x(w)} y1={TOP - 6} y2={BOTTOM} stroke="var(--muted)" strokeDasharray="2 4" />
+          <text x={x(w)} y={10} fontSize="11" fill="var(--muted)" textAnchor="middle">
             minimums due
           </text>
         </g>
       ))}
-      <polygon points={band} fill="#4fb3bf" fillOpacity={0.22} />
-      <polyline points={median} fill="none" stroke="#4fb3bf" strokeWidth={2.5} />
-      <line x1={L} x2={R} y1={y(0)} y2={y(0)} stroke="#f2a541" strokeWidth={2} strokeDasharray="6 5" />
+      <polygon points={band} fill="var(--safe)" fillOpacity={0.22} />
+      <polyline points={median} fill="none" stroke="var(--safe)" strokeWidth={2.5} />
+      <line x1={L} x2={R} y1={y(0)} y2={y(0)} stroke="var(--risk)" strokeWidth={2} strokeDasharray="6 5" />
       {bands.map((b) => (
-        <text key={b.week} x={x(b.week)} y={H - 8} fontSize="11" fill="#8b949e" textAnchor="middle" fontFamily="var(--mono)">
+        <text key={b.week} x={x(b.week)} y={H - 8} fontSize="11" fill="var(--muted)" textAnchor="middle" fontFamily="var(--mono)">
           {b.week === 0 ? "now" : `w${b.week}`}
         </text>
       ))}
@@ -83,8 +83,8 @@ export function FrontierChart({
     >
       {[0, maxP / 2, maxP].map((t) => (
         <g key={t}>
-          <line x1={L} x2={R} y1={y(t)} y2={y(t)} stroke="#2a313c" />
-          <text x={L - 8} y={y(t) + 4} fontSize="11" fill="#8b949e" textAnchor="end" fontFamily="var(--mono)">
+          <line x1={L} x2={R} y1={y(t)} y2={y(t)} stroke="var(--line)" />
+          <text x={L - 8} y={y(t) + 4} fontSize="11" fill="var(--muted)" textAnchor="end" fontFamily="var(--mono)">
             {Math.round(t * 100)}%
           </text>
         </g>
@@ -96,16 +96,16 @@ export function FrontierChart({
           y={y(c.missProbability)}
           width={barW}
           height={Math.max(1, BOTTOM - y(c.missProbability))}
-          fill={c.extraPayment === recommended ? "#e6edf3" : c.feasible ? "#4fb3bf" : "#f2a541"}
+          fill={c.extraPayment === recommended ? "var(--text)" : c.feasible ? "var(--safe)" : "var(--risk)"}
           fillOpacity={c.extraPayment === recommended ? 1 : 0.75}
         />
       ))}
-      <line x1={L} x2={R} y1={y(limit)} y2={y(limit)} stroke="#e6edf3" strokeDasharray="4 4" />
-      <text x={R} y={y(limit) - 6} fontSize="11" fill="#c9d1d9" textAnchor="end">
+      <line x1={L} x2={R} y1={y(limit)} y2={y(limit)} stroke="var(--text)" strokeDasharray="4 4" />
+      <text x={R} y={y(limit) - 6} fontSize="11" fill="var(--text-2)" textAnchor="end">
         your {Math.round(limit * 100)}% limit
       </text>
       {[0, maxPay / 2, maxPay].map((p) => (
-        <text key={p} x={x(p)} y={H - 8} fontSize="11" fill="#8b949e" textAnchor="middle" fontFamily="var(--mono)">
+        <text key={p} x={x(p)} y={H - 8} fontSize="11" fill="var(--muted)" textAnchor="middle" fontFamily="var(--mono)">
           {usdShort(p)}
         </text>
       ))}
@@ -169,21 +169,21 @@ export function StrategyChart({ points }: { points: StrategyPoint[] }) {
     >
       {yTicks.map((t) => (
         <g key={`y${t}`}>
-          <line x1={left} x2={right} y1={y(t)} y2={y(t)} stroke="#2a313c" />
-          <text x={left - 8} y={y(t) + 4} fontSize="11" fill="#8b949e" textAnchor="end" fontFamily="var(--mono)">
+          <line x1={left} x2={right} y1={y(t)} y2={y(t)} stroke="var(--line)" />
+          <text x={left - 8} y={y(t) + 4} fontSize="11" fill="var(--muted)" textAnchor="end" fontFamily="var(--mono)">
             ${Math.round(t)}
           </text>
         </g>
       ))}
       {xTicks.map((t) => (
-        <text key={`x${t}`} x={x(t)} y={bottom + 18} fontSize="11" fill="#8b949e" textAnchor="middle" fontFamily="var(--mono)">
+        <text key={`x${t}`} x={x(t)} y={bottom + 18} fontSize="11" fill="var(--muted)" textAnchor="middle" fontFamily="var(--mono)">
           {Math.round(t * 100)}%
         </text>
       ))}
-      <text x={(left + right) / 2} y={H - 4} fontSize="11" fill="#8b949e" textAnchor="middle">
+      <text x={(left + right) / 2} y={H - 4} fontSize="11" fill="var(--muted)" textAnchor="middle">
         chance of missing at least one payment over 26 weeks →
       </text>
-      <text x={14} y={(top + bottom) / 2} fontSize="11" fill="#8b949e" textAnchor="middle" transform={`rotate(-90 14 ${(top + bottom) / 2})`}>
+      <text x={14} y={(top + bottom) / 2} fontSize="11" fill="var(--muted)" textAnchor="middle" transform={`rotate(-90 14 ${(top + bottom) / 2})`}>
         expected cost ↑
       </text>
       {placeLabels(points.map((p) => ({ p, px: x(p.missProbability), py: y(p.expectedCost) }))).map(({ p, px, py, ly }) => {
@@ -191,9 +191,9 @@ export function StrategyChart({ points }: { points: StrategyPoint[] }) {
         const anchor = px > 440 ? "end" : "start";
         return (
           <g key={p.id}>
-            <circle cx={px} cy={py} r={isDp ? 8 : 6} fill={isDp ? "#4fb3bf" : "#f2a541"} fillOpacity={isDp ? 1 : 0.85} stroke={isDp ? "#e6edf3" : "none"} strokeWidth={2} />
-            {Math.abs(ly - py) > 2 && <line x1={px} y1={py} x2={px + (anchor === "start" ? 10 : -10)} y2={ly} stroke="#8b949e" strokeWidth={1} />}
-            <text x={px + (anchor === "start" ? 12 : -12)} y={ly + 4} fontSize="12" fill={isDp ? "#e6edf3" : "#c9d1d9"} textAnchor={anchor} fontWeight={isDp ? 700 : 400}>
+            <circle cx={px} cy={py} r={isDp ? 8 : 6} fill={isDp ? "var(--safe)" : "var(--risk)"} fillOpacity={isDp ? 1 : 0.85} stroke={isDp ? "var(--text)" : "none"} strokeWidth={2} />
+            {Math.abs(ly - py) > 2 && <line x1={px} y1={py} x2={px + (anchor === "start" ? 10 : -10)} y2={ly} stroke="var(--muted)" strokeWidth={1} />}
+            <text x={px + (anchor === "start" ? 12 : -12)} y={ly + 4} fontSize="12" fill={isDp ? "var(--text)" : "var(--text-2)"} textAnchor={anchor} fontWeight={isDp ? 700 : 400}>
               {p.label}
             </text>
           </g>

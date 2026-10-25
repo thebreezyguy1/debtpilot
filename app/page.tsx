@@ -6,13 +6,14 @@ import { api } from "../convex/_generated/api";
 import { availableCashToday } from "../lib/planner";
 import type { CandidateResult, Comparison, PlannerResult } from "../lib/planner/types";
 import { CashChart, FrontierChart, StrategyChart } from "./charts";
+import { ThemeToggle } from "./ThemeToggle";
 import type { BacktestResult } from "../lib/planner/backtest";
 
 const usd = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
 const pct = (p: number) => `${(p * 100).toFixed(1)}%`;
 const time = (ms: number) => new Date(ms).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
-const dotColor = { data: "#4fb3bf", event: "#f2a541", planner: "#7fd0d9", agent: "#e6edf3", tool: "#8b949e", human: "#7fd0d9" } as const;
+const dotColor = { data: "var(--safe)", event: "var(--risk)", planner: "var(--safe-2)", agent: "var(--text)", tool: "var(--muted)", human: "var(--safe-2)" } as const;
 
 /** "Late90Days" → "late 90 days", "AsAgreed" → "current". */
 function statusText(status?: string): string | null {
@@ -34,8 +35,8 @@ const suggestions = ["Why not pay more this week?", "What if I also have a $400 
 function Logo() {
   return (
     <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true">
-      <circle cx="16" cy="16" r="14" fill="none" stroke="#4fb3bf" strokeWidth="2.5" />
-      <path d="M16 6 L16 16 L23 20" fill="none" stroke="#f2a541" strokeWidth="2.5" strokeLinecap="round" />
+      <circle cx="16" cy="16" r="14" fill="none" stroke="var(--safe)" strokeWidth="2.5" />
+      <path d="M16 6 L16 16 L23 20" fill="none" stroke="var(--risk)" strokeWidth="2.5" strokeLinecap="round" />
     </svg>
   );
 }
@@ -43,10 +44,10 @@ function Logo() {
 function CompareCard({ title, c, rec }: { title: string; c: CandidateResult; rec?: boolean }) {
   return (
     <div className={rec ? "cmp rec" : "cmp"}>
-      <span className="label" style={rec ? { color: "#7fd0d9" } : undefined}>{title}</span>
+      <span className="label" style={rec ? { color: "var(--safe-2)" } : undefined}>{title}</span>
       <span className="amt">Pay {usd(c.extraPayment)}</span>
       <span className="note">
-        Miss risk <strong className="mono" style={rec ? undefined : { color: "#f2a541" }}>{pct(c.missProbability)}</strong> · Expected cost{" "}
+        Miss risk <strong className="mono" style={rec ? undefined : { color: "var(--risk)" }}>{pct(c.missProbability)}</strong> · Expected cost{" "}
         <strong className="mono">{usd(c.expectedCost)}</strong>
       </span>
       <span className="fine">
@@ -99,7 +100,7 @@ function BacktestPanel({
         </p>
       )}
       {running && <p className="note" style={{ margin: 0 }}>Running every strategy through the same simulated futures…</p>}
-      {backtest?.status === "error" && <p className="note" style={{ margin: 0, color: "#f2c27a" }}>{backtest.error}</p>}
+      {backtest?.status === "error" && <p className="note" style={{ margin: 0, color: "var(--risk-2)" }}>{backtest.error}</p>}
       {result && (
         <>
           {backtest!.stale && <span className="badge warn" style={{ alignSelf: "flex-start" }}>Profile changed since this run: re-run to update</span>}
@@ -112,7 +113,7 @@ function BacktestPanel({
               </thead>
               <tbody>
                 {result.policies.map((p) => (
-                  <tr key={p.id} style={p.kind === "debtpilot" ? { background: "#10242a" } : undefined}>
+                  <tr key={p.id} style={p.kind === "debtpilot" ? { background: "var(--safe-bg)" } : undefined}>
                     <td className="name" title={p.description}>{p.label}</td>
                     <td>{pct(p.missProbability)}</td>
                     <td>{p.avgMisses.toFixed(1)}</td>
@@ -213,7 +214,7 @@ export default function Dashboard() {
         </div>
         <div className="chips">
           <span className={data.creditFeed.down ? "chip chip-warn" : "chip"}>
-            <span className="dot" style={data.creditFeed.down ? { background: "#f2a541" } : undefined} />
+            <span className="dot" style={data.creditFeed.down ? { background: "var(--risk)" } : undefined} />
             Credit: {data.sources.credit}
             {data.creditFeed.down
               ? ` · feed DOWN (simulated) since ${time(data.creditFeed.downSince!)}`
@@ -224,6 +225,7 @@ export default function Dashboard() {
           <span className="chip"><span className="dot" />Cash: {data.sources.cash}</span>
           {data.creditScore !== null && <span className="chip">Score <strong className="mono">{data.creditScore}</strong></span>}
           <span className="chip">Risk policy <strong className="mono">≤ {pct(input.riskTolerance)}</strong></span>
+          <ThemeToggle />
         </div>
       </header>
 
@@ -288,7 +290,7 @@ export default function Dashboard() {
           ))}
         </div>
         {eventStatus.result && <span className="note">{eventStatus.result}</span>}
-        {eventStatus.error && <span className="note" style={{ color: "#f2c27a" }}>{eventStatus.error}</span>}
+        {eventStatus.error && <span className="note" style={{ color: "var(--risk-2)" }}>{eventStatus.error}</span>}
         {(input.incomeChanges?.length ?? 0) > 0 && (
           <span className="sub">
             Income changes: {input.incomeChanges!.map((c) => `${c.label} (${c.multiplier === 0 ? "no income" : `${Math.round(c.multiplier * 100)}%`}, weeks ${c.fromWeek}–${c.fromWeek + c.weeks - 1})`).join("; ")}
@@ -366,9 +368,9 @@ export default function Dashboard() {
               <div className="toolbar">
                 <h2 style={{ color: "var(--text)" }}>Projected cash, next {input.horizonWeeks} weeks</h2>
                 <div className="legend">
-                  <span><span style={{ width: 16, height: 10, background: "#4fb3bf", opacity: 0.3 }} />10th–90th percentile</span>
-                  <span><span style={{ width: 16, height: 3, background: "#4fb3bf" }} />median</span>
-                  <span><span style={{ width: 16, borderTop: "2px dashed #f2a541" }} />$0</span>
+                  <span><span style={{ width: 16, height: 10, background: "var(--safe)", opacity: 0.3 }} />10th–90th percentile</span>
+                  <span><span style={{ width: 16, height: 3, background: "var(--safe)" }} />median</span>
+                  <span><span style={{ width: 16, borderTop: "2px dashed var(--risk)" }} />$0</span>
                 </div>
               </div>
               <CashChart bands={plan.cashBands} dueWeeks={dueWeeks} />
@@ -417,12 +419,12 @@ export default function Dashboard() {
                       <td className="name">
                         {d.label} · {d.kind}
                         {statusText(d.status) && (
-                          <span style={{ color: d.status === "AsAgreed" ? "#8b949e" : "#f2a541", fontWeight: 500 }}> · {statusText(d.status)}</span>
+                          <span style={{ color: d.status === "AsAgreed" ? "var(--muted)" : "var(--risk)", fontWeight: 500 }}> · {statusText(d.status)}</span>
                         )}
                       </td>
                       <td>{usd(d.balance)}{d.creditLimit ? ` / ${usd(d.creditLimit)}` : ""}</td>
                       <td>{Number((d.apr * 100).toFixed(2))}%</td>
-                      <td>{usd(d.minimumPayment)}{d.pastDue ? <span style={{ color: "#f2a541" }}> · {usd(d.pastDue)} past due</span> : null}</td>
+                      <td>{usd(d.minimumPayment)}{d.pastDue ? <span style={{ color: "var(--risk)" }}> · {usd(d.pastDue)} past due</span> : null}</td>
                       <td>{d.dueWeeks.map((w) => `w${w}`).join(", ")}</td>
                       <td className="src">bal {d.sources.balance ?? "?"} · APR {d.sources.apr ?? "?"} · min {d.sources.minimumPayment ?? "?"}</td>
                     </tr>
@@ -432,7 +434,7 @@ export default function Dashboard() {
             </div>
             {(input.collections?.length ?? 0) > 0 && (
               <p className="note" style={{ margin: 0 }}>
-                <strong style={{ color: "#f2c27a" }}>In collections, not in the plan:</strong>{" "}
+                <strong style={{ color: "var(--risk-2)" }}>In collections, not in the plan:</strong>{" "}
                 {input.collections!.map((c) => `${c.label} ${usd(c.balance)}`).join(", ")}. A credit counselor should negotiate these; DebtPilot won't send extra payments to them.
               </p>
             )}
@@ -459,7 +461,7 @@ export default function Dashboard() {
               Pull an Experian report for a CRS sandbox test identity. Cash history stays on the demo fixture.
             </p>
             {data.integrations.crsLocked ? (
-              <p className="note" style={{ margin: 0, color: "#f2c27a" }}>{data.integrations.crsLocked}</p>
+              <p className="note" style={{ margin: 0, color: "var(--risk-2)" }}>{data.integrations.crsLocked}</p>
             ) : !data.integrations.crsConfigured ? (
               <p className="note" style={{ margin: 0 }}>
                 Set <code>CRS_USERNAME</code> and <code>CRS_PASSWORD</code> on the Convex deployment to enable this.
@@ -491,7 +493,7 @@ export default function Dashboard() {
                 {crsStatus.busy ? "Pulling report…" : "Load from CRS sandbox"}
               </button>
             </div>
-            {crsStatus.error && <p className="note" style={{ margin: 0, color: "#f2c27a" }}>{crsStatus.error}</p>}
+            {crsStatus.error && <p className="note" style={{ margin: 0, color: "var(--risk-2)" }}>{crsStatus.error}</p>}
 
             <div style={{ borderTop: "1px solid var(--line-soft)", paddingTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
               <span className="sub">
@@ -509,7 +511,7 @@ export default function Dashboard() {
                   <button className="btn" disabled={nessieStatus.busy} onClick={() => runNessie(false)}>Re-import cash</button>
                 )}
               </div>
-              {nessieStatus.error && <p className="note" style={{ margin: 0, color: "#f2c27a" }}>{nessieStatus.error}</p>}
+              {nessieStatus.error && <p className="note" style={{ margin: 0, color: "var(--risk-2)" }}>{nessieStatus.error}</p>}
             </div>
           </section>
 
